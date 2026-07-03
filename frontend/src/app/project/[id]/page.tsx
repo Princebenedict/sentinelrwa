@@ -27,6 +27,7 @@ export default function ProjectPage() {
   const [showEvidence, setShowEvidence] = useState(false);
   const [showEvaluate, setShowEvaluate] = useState(false);
   const [activeTab, setActiveTab] = useState<"history" | "evidence">("history");
+  const [hasLoaded, setHasLoaded] = useState(false);
 
   const load = async () => {
     const [p, h, hist, ins, ev] = await Promise.all([
@@ -37,6 +38,7 @@ export default function ProjectPage() {
     if (hist) setHistory((Array.isArray(hist) ? hist : []) as VerdictHistory[]);
     if (ins && !("error" in (ins as object))) setInsurance(ins as InsuranceState);
     if (ev) setEvidence((Array.isArray(ev) ? ev : []) as EvidenceEntry[]);
+    setHasLoaded(true);
   };
 
   useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [id]);
@@ -45,7 +47,7 @@ export default function ProjectPage() {
   const barColor = health ? riskColors[health.risk_level as keyof typeof riskColors] || "#f97316" : "#f97316";
   const evaluated = (health?.evaluation_count || 0) > 0;
 
-  if (!project && !loading) {
+  if (!project && hasLoaded) {
     return (
       <div className="min-h-screen" style={{ backgroundColor: "#0A0A0B" }}>
         <Header />

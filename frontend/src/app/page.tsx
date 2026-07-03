@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Shield, Brain, Globe, TrendingUp, ArrowRight, Zap, Sparkles } from "lucide-react";
 import Header from "@/components/Header";
+import LandingSections from "@/components/LandingSections";
 
 function CountUp({ target, suffix = "" }: { target: number; suffix?: string }) {
   const [n, setN] = useState(0);
@@ -150,6 +151,8 @@ export default function Home() {
             ))}
           </div>
         </section>
+
+        <LandingSections />
 
         <section className="max-w-5xl mx-auto px-6 pb-24">
           <div className="rounded-2xl p-6" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>

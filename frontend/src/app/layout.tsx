@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { WalletProvider } from "@/context/WalletContext";
+import { WalletProvider } from "@/hooks/useWallet";
 
 export const metadata: Metadata = {
-  title: "SentinelRWA - AI-Powered Asset Intelligence",
+  title: "SentinelRWA — AI-Powered Asset Intelligence",
   description: "Real-World Asset monitoring and insurance powered by GenLayer Intelligent Contracts",
 };
 

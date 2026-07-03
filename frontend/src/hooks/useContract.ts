@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { callView, sendWrite } from "@/lib/genlayer";
+import { useWallet } from "@/hooks/useWallet";
 import type {
   DashboardItem,
   Project,
@@ -12,6 +13,7 @@ import type {
 } from "@/lib/types";
 
 export function useContract() {
+  const { address } = useWallet();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,29 +37,28 @@ export function useContract() {
     () => withLoading(() => callView<DashboardItem[]>("get_dashboard")),
     [withLoading]
   );
-
   const getProject = useCallback(
     (id: string) => withLoading(() => callView<Project>("get_project", [id])),
     [withLoading]
   );
-
   const getHealth = useCallback(
     (id: string) => withLoading(() => callView<ProjectHealth>("get_health", [id])),
     [withLoading]
   );
-
   const getHistory = useCallback(
     (id: string) => withLoading(() => callView<VerdictHistory[]>("get_history", [id])),
     [withLoading]
   );
-
   const getInsuranceState = useCallback(
     (id: string) => withLoading(() => callView<InsuranceState>("get_insurance_state", [id])),
     [withLoading]
   );
-
   const getEvidence = useCallback(
     (id: string) => withLoading(() => callView<EvidenceEntry[]>("get_evidence", [id])),
+    [withLoading]
+  );
+  const getOwner = useCallback(
+    () => withLoading(() => callView<string>("get_owner")),
     [withLoading]
   );
 
@@ -69,10 +70,8 @@ export function useContract() {
       asset_type: string;
       country: string;
       image_url: string;
-      evaluation_criteria: string;
       expected_performance: string;
       insurance_threshold: number;
-      privateKey: string;
     }) =>
       withLoading(() =>
         sendWrite(
@@ -84,14 +83,19 @@ export function useContract() {
             params.asset_type,
             params.country,
             params.image_url,
-            params.evaluation_criteria,
             params.expected_performance,
             params.insurance_threshold,
           ],
-          params.privateKey
+          address || ""
         )
       ),
-    [withLoading]
+    [withLoading, address]
+  );
+
+  const removeProject = useCallback(
+    (project_id: string) =>
+      withLoading(() => sendWrite("remove_project", [project_id], address || "")),
+    [withLoading, address]
   );
 
   const submitEvidence = useCallback(
@@ -100,34 +104,36 @@ export function useContract() {
       evidence_type: string;
       content: string;
       source_url: string;
-      privateKey: string;
     }) =>
       withLoading(() =>
         sendWrite(
           "submit_evidence",
           [params.project_id, params.evidence_type, params.content, params.source_url],
-          params.privateKey
+          address || ""
         )
       ),
-    [withLoading]
+    [withLoading, address]
   );
 
   const evaluateProject = useCallback(
-    (project_id: string, privateKey: string) =>
-      withLoading(() => sendWrite("evaluate_project", [project_id], privateKey)),
-    [withLoading]
+    (project_id: string) =>
+      withLoading(() => sendWrite("evaluate_project", [project_id], address || "")),
+    [withLoading, address]
   );
 
   return {
     loading,
     error,
+    address,
     getDashboard,
     getProject,
     getHealth,
     getHistory,
     getInsuranceState,
     getEvidence,
+    getOwner,
     registerProject,
+    removeProject,
     submitEvidence,
     evaluateProject,
   };

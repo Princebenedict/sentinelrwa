@@ -23,8 +23,28 @@ function CountUp({ target, suffix = "" }: { target: number; suffix?: string }) {
   return <>{n.toLocaleString()}{suffix}</>;
 }
 
+interface Particle {
+  w: number; h: number; left: number; top: number;
+  bg: string; delay: number; dur: number;
+}
+
 export default function Home() {
   const glowRef = useRef<HTMLDivElement>(null);
+  const [particles, setParticles] = useState<Particle[]>([]);
+
+  // Generate particles ONLY on the client to avoid hydration mismatch
+  useEffect(() => {
+    const arr: Particle[] = Array.from({ length: 30 }).map((_, i) => ({
+      w: Math.random() * 3 + 1,
+      h: Math.random() * 3 + 1,
+      left: Math.random() * 100,
+      top: Math.random() * 100,
+      bg: i % 2 ? "rgba(124,92,255,0.4)" : "rgba(0,245,255,0.3)",
+      delay: Math.random() * 5,
+      dur: Math.random() * 10 + 10,
+    }));
+    setParticles(arr);
+  }, []);
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
@@ -38,29 +58,27 @@ export default function Home() {
 
   return (
     <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: "#0A0A0B" }}>
-      {/* Cursor spotlight */}
       <div ref={glowRef} className="pointer-events-none fixed inset-0 z-0" />
 
-      {/* Ambient glows */}
       <div className="pointer-events-none fixed inset-0 z-0">
-        <div className="absolute top-[-10%] left-[10%] w-125 h-125 rounded-full blur-[120px] opacity-30 animate-pulse-slow" style={{ background: "#7C5CFF" }} />
-        <div className="absolute bottom-[-10%] right-[5%] w-100 h-100 rounded-full blur-[120px] opacity-20 animate-pulse-slow" style={{ background: "#00F5FF", animationDelay: "1.5s" }} />
+        <div className="absolute top-[-10%] left-[10%] w-[500px] h-[500px] rounded-full blur-[120px] opacity-30 animate-pulse-slow" style={{ background: "#7C5CFF" }} />
+        <div className="absolute bottom-[-10%] right-[5%] w-[400px] h-[400px] rounded-full blur-[120px] opacity-20 animate-pulse-slow" style={{ background: "#00F5FF", animationDelay: "1.5s" }} />
       </div>
 
-      {/* Floating particles */}
-      <div className="pointer-events-none fixed inset-0 z-0">
-        {Array.from({ length: 30 }).map((_, i) => (
+      {/* Particles render only after mount, so no server/client mismatch */}
+      <div className="pointer-events-none fixed inset-0 z-0" suppressHydrationWarning>
+        {particles.map((p, i) => (
           <div
             key={i}
             className="absolute rounded-full animate-float"
             style={{
-              width: Math.random() * 3 + 1 + "px",
-              height: Math.random() * 3 + 1 + "px",
-              left: Math.random() * 100 + "%",
-              top: Math.random() * 100 + "%",
-              background: i % 2 ? "rgba(124,92,255,0.4)" : "rgba(0,245,255,0.3)",
-              animationDelay: Math.random() * 5 + "s",
-              animationDuration: Math.random() * 10 + 10 + "s",
+              width: p.w + "px",
+              height: p.h + "px",
+              left: p.left + "%",
+              top: p.top + "%",
+              background: p.bg,
+              animationDelay: p.delay + "s",
+              animationDuration: p.dur + "s",
             }}
           />
         ))}
@@ -69,7 +87,6 @@ export default function Home() {
       <div className="relative z-10">
         <Header />
 
-        {/* Hero */}
         <section className="max-w-5xl mx-auto px-6 pt-24 pb-16 text-center">
           <div className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm mb-8 animate-fade-up" style={{ background: "rgba(124,92,255,0.1)", border: "1px solid rgba(124,92,255,0.2)", color: "#b9a8ff" }}>
             <Sparkles className="w-3.5 h-3.5" />
@@ -99,7 +116,6 @@ export default function Home() {
             </a>
           </div>
 
-          {/* Stats */}
           <div className="grid grid-cols-3 gap-6 mt-16 max-w-2xl mx-auto animate-fade-up" style={{ animationDelay: "0.4s" }}>
             {[
               { value: 100, suffix: "%", label: "On-Chain" },
@@ -116,7 +132,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Features */}
         <section className="max-w-5xl mx-auto px-6 py-16">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
@@ -136,7 +151,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Network Info */}
         <section className="max-w-5xl mx-auto px-6 pb-24">
           <div className="rounded-2xl p-6" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
             <h2 className="text-white font-semibold mb-4 flex items-center gap-2">

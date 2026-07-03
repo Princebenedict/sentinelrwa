@@ -78,3 +78,25 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-up, .animate-float, .animate-pulse-slow { animation: none; opacity: 1; }
 }
+
+@keyframes ticker-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.ticker-track { animation: ticker-scroll 30s linear infinite; }
+.ticker-track:hover { animation-play-state: paused; }
+.ticker-mask {
+  mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+}
+
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.card-in { opacity: 0; animation: card-in 0.6s cubic-bezier(0.16,1,0.3,1) forwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track { animation: none; }
+  .card-in { animation: none; opacity: 1; }
+}

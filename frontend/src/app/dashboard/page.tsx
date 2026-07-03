@@ -1,24 +1,44 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, RefreshCw, Activity, Layers, CheckCircle2, AlertTriangle, Gauge } from "lucide-react";
+import { Plus, RefreshCw, Activity, Layers, CheckCircle2, AlertTriangle, Gauge, Sparkles } from "lucide-react";
 import Header from "@/components/Header";
 import ProjectCard from "@/components/ProjectCard";
 import RegisterProjectModal from "@/components/RegisterProjectModal";
+import { CountUp, AssetDonut, ActivityTicker } from "@/components/DashboardWidgets";
 import { useContract } from "@/hooks/useContract";
 import type { DashboardItem } from "@/lib/types";
+
+// A sample asset shown only when the user has none, so the dashboard never looks empty.
+const DEMO_ASSET: DashboardItem = {
+  project_id: "demo-lagos-tower",
+  name: "Green Tower Lagos (Demo)",
+  asset_type: "Real Estate",
+  country: "Nigeria",
+  image_url: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80",
+  health_score: 88,
+  risk_level: "LOW",
+  status: "HEALTHY",
+  latest_verdict: "PASS",
+  evaluation_count: 3,
+};
 
 export default function DashboardPage() {
   const { getDashboard, loading } = useContract();
   const [projects, setProjects] = useState<DashboardItem[]>([]);
   const [showRegister, setShowRegister] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
   const load = async () => {
     const data = await getDashboard();
     if (data) setProjects(Array.isArray(data) ? data : []);
+    setLoaded(true);
   };
 
   useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
+
+  const hasReal = projects.length > 0;
+  const display = hasReal ? projects : [DEMO_ASSET];
 
   const stats = {
     total: projects.length,
@@ -28,10 +48,10 @@ export default function DashboardPage() {
   };
 
   const statCards = [
-    { label: "Total Assets", value: stats.total, icon: Layers, color: "#7C5CFF" },
-    { label: "Healthy", value: stats.healthy, icon: CheckCircle2, color: "#00E699" },
-    { label: "At Risk", value: stats.atRisk, icon: AlertTriangle, color: "#FF4D6D" },
-    { label: "Avg Score", value: `${stats.avgScore}/100`, icon: Gauge, color: "#00F5FF" },
+    { label: "Total Assets", value: stats.total, suffix: "", icon: Layers, color: "#7C5CFF" },
+    { label: "Healthy", value: stats.healthy, suffix: "", icon: CheckCircle2, color: "#00E699" },
+    { label: "At Risk", value: stats.atRisk, suffix: "", icon: AlertTriangle, color: "#FF4D6D" },
+    { label: "Avg Score", value: stats.avgScore, suffix: "/100", icon: Gauge, color: "#00F5FF" },
   ];
 
   return (
@@ -67,9 +87,9 @@ export default function DashboardPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          {statCards.map(({ label, value, icon: Icon, color }) => (
-            <div key={label} className="rounded-2xl p-5 relative overflow-hidden" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          {statCards.map(({ label, value, suffix, icon: Icon, color }, i) => (
+            <div key={label} className="rounded-2xl p-5 relative overflow-hidden card-in" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", animationDelay: `${i * 0.08}s` }}>
               <div className="absolute top-0 right-0 w-24 h-24 rounded-full blur-3xl opacity-20" style={{ background: color }} />
               <div className="flex items-center justify-between mb-3 relative">
                 <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: `${color}1f`, border: `1px solid ${color}33` }}>
@@ -77,36 +97,44 @@ export default function DashboardPage() {
                 </div>
               </div>
               <p className="text-slate-500 text-xs relative">{label}</p>
-              <p className="text-2xl font-bold mt-1 relative" style={{ color }}>{value}</p>
+              <p className="text-2xl font-bold mt-1 relative" style={{ color }}>
+                {loaded ? <CountUp value={value} suffix={suffix} /> : `0${suffix}`}
+              </p>
             </div>
           ))}
         </div>
 
-        {/* Projects or empty state */}
+        {/* Live ticker + distribution */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+          <div className="lg:col-span-2 card-in" style={{ animationDelay: "0.3s" }}>
+            <ActivityTicker projects={hasReal ? projects : []} />
+          </div>
+          <div className="card-in" style={{ animationDelay: "0.38s" }}>
+            <AssetDonut projects={display} />
+          </div>
+        </div>
+
+        {/* Demo banner */}
+        {loaded && !hasReal && (
+          <div className="rounded-xl px-4 py-3 mb-5 flex items-center gap-3 card-in" style={{ background: "rgba(124,92,255,0.08)", border: "1px solid rgba(124,92,255,0.2)" }}>
+            <Sparkles className="w-4 h-4 shrink-0" style={{ color: "#7C5CFF" }} />
+            <p className="text-slate-300 text-xs">
+              This is a <strong className="text-white">sample asset</strong> so you can see how monitoring looks.
+              Register your own asset to replace it with live data.
+            </p>
+          </div>
+        )}
+
+        {/* Projects grid */}
         {loading && projects.length === 0 ? (
           <div className="text-center py-20 text-slate-500">Loading assets...</div>
-        ) : projects.length === 0 ? (
-          <div className="rounded-2xl p-12 text-center relative overflow-hidden" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <div className="absolute top-[-30%] left-1/2 w-72 h-72 rounded-full blur-[100px] opacity-20" style={{ background: "#7C5CFF", transform: "translateX(-50%)" }} />
-            <div className="relative">
-              <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5" style={{ background: "rgba(124,92,255,0.12)", border: "1px solid rgba(124,92,255,0.25)" }}>
-                <Layers className="w-8 h-8" style={{ color: "#7C5CFF" }} />
-              </div>
-              <h3 className="text-white font-semibold text-lg mb-2">No assets yet</h3>
-              <p className="text-slate-500 text-sm mb-6 max-w-md mx-auto">
-                Register your first real-world asset to start AI-powered monitoring. Add evidence,
-                run an evaluation, and let the GenLayer jury score it.
-              </p>
-              <button onClick={() => setShowRegister(true)}
-                className="text-white font-semibold px-6 py-3 rounded-xl transition-all inline-flex items-center gap-2"
-                style={{ background: "linear-gradient(135deg, #7C5CFF, #6d4ee8)", boxShadow: "0 6px 24px rgba(124,92,255,0.35)" }}>
-                <Plus className="w-4 h-4" /> Register Your First Asset
-              </button>
-            </div>
-          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {projects.map((p) => <ProjectCard key={p.project_id} project={p} />)}
+            {display.map((p, i) => (
+              <div key={p.project_id} className="card-in" style={{ animationDelay: `${0.4 + i * 0.06}s` }}>
+                <ProjectCard project={p} />
+              </div>
+            ))}
           </div>
         )}
       </div>

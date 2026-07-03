@@ -6,10 +6,14 @@ export interface Project {
   country: string;
   location: string;
   image_url: string;
+  ownership_proof_url: string;
+  lister_contact: string;
   price: string;
   owner: string;
   expected_performance: string;
   insurance_threshold: number;
+  verification_status: string;
+  has_ownership_proof: number;
   created_at: string;
 }
 
@@ -18,7 +22,6 @@ export interface ProjectHealth {
   health_score: number;
   risk_level: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
   status: "HEALTHY" | "MONITOR" | "REVIEW_REQUIRED" | "INSURANCE_TRIGGERED" | "CLAIM_ELIGIBLE";
-  verification: "UNVERIFIED" | "UNDER_REVIEW" | "VERIFIED" | "FLAGGED";
   last_evaluated: string;
   latest_verdict: string | null;
   evaluation_count: number;
@@ -34,15 +37,14 @@ export interface EvidenceEntry {
 
 export interface VerdictHistory {
   evaluation_number: number;
-  verdict: "PASS" | "CONCERN" | "FAIL";
+  verdict: string;
   score: number;
   risk: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
   confidence: "LOW" | "MEDIUM" | "HIGH";
-  recommended_action: "NONE" | "MONITOR" | "REVIEW" | "TRIGGER_INSURANCE";
+  recommended_action: string;
   reasoning: string;
   key_findings: string[];
   status: string;
-  verification?: string;
   evidence_count_at_eval: number;
   timestamp: string;
 }
@@ -55,10 +57,10 @@ export interface DashboardItem {
   location: string;
   image_url: string;
   price: string;
+  verification_status: string;
   health_score: number;
   risk_level: string;
   status: string;
-  verification: string;
   latest_verdict: string | null;
   evaluation_count: number;
 }
@@ -66,7 +68,6 @@ export interface DashboardItem {
 export interface InsuranceState {
   project_id: string;
   status: string;
-  verification: string;
   health_score: number;
   risk_level: string;
   insurance_threshold: number;

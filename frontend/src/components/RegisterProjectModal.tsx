@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { X, Plus, Upload, Link2, ImageIcon, Sparkles, Wallet, ShieldCheck } from "lucide-react";
+import { X, Plus, Upload, Link2, ImageIcon, ShieldAlert, Wallet } from "lucide-react";
 import { useContract } from "@/hooks/useContract";
 import { useWallet } from "@/hooks/useWallet";
 
@@ -42,8 +42,8 @@ export default function RegisterProjectModal({ open, onClose, onSuccess }: Props
   const fileRef = useRef<HTMLInputElement>(null);
   const [imageMode, setImageMode] = useState<"url" | "upload">("url");
   const [imagePreview, setImagePreview] = useState("");
-  const [localError, setLocalError] = useState("");
-  const [attested, setAttested] = useState(false);
+  const [imageError, setImageError] = useState("");
+  const [formError, setFormError] = useState("");
   const [form, setForm] = useState({
     project_id: "",
     name: "",
@@ -52,6 +52,8 @@ export default function RegisterProjectModal({ open, onClose, onSuccess }: Props
     country: "",
     location: "",
     image_url: "",
+    ownership_proof_url: "",
+    lister_contact: "",
     price: "",
     expected_performance: "",
     insurance_threshold: 40,
@@ -62,13 +64,13 @@ export default function RegisterProjectModal({ open, onClose, onSuccess }: Props
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setLocalError("");
-    if (!file.type.startsWith("image/")) { setLocalError("Please choose an image file"); return; }
+    setImageError("");
+    if (!file.type.startsWith("image/")) { setImageError("Please choose an image file"); return; }
     try {
       const compressed = await compressImage(file);
       setForm((p) => ({ ...p, image_url: compressed }));
       setImagePreview(compressed);
-    } catch { setLocalError("Could not process that image"); }
+    } catch { setImageError("Could not process that image"); }
   };
 
   const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -77,64 +79,73 @@ export default function RegisterProjectModal({ open, onClose, onSuccess }: Props
     setImagePreview(url);
   };
 
-  const validate = (): string => {
-    if (!form.project_id.trim()) return "Project ID is required";
-    if (/\s/.test(form.project_id)) return "Project ID cannot contain spaces (use hyphens)";
-    if (!form.name.trim()) return "Asset name is required";
-    if (!form.description.trim()) return "Description is required";
-    if (!form.country.trim()) return "Country is required";
-    if (!form.location.trim()) return "Specific location / address is required";
-    if (!form.image_url.trim()) return "An asset image is required";
-    if (!form.price.trim()) return "Asset value / price is required";
-    if (!attested) return "You must confirm the ownership attestation";
-    return "";
-  };
+  // Force a clean project_id (no spaces) so the detail-page URL never breaks
+  const cleanId = (raw: string) => raw.trim().toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "");
 
   const handleSubmit = async () => {
-    const v = validate();
-    if (v) { setLocalError(v); return; }
-    setLocalError("");
-    const result = await registerProject(form);
+    setFormError("");
+    const id = cleanId(form.project_id);
+    if (!id) return setFormError("Asset ID is required (letters, numbers, hyphens).");
+    if (!form.name.trim()) return setFormError("Asset name is required.");
+    if (!form.description.trim()) return setFormError("Description is required.");
+    if (!form.country.trim()) return setFormError("Country is required.");
+    if (!form.location.trim()) return setFormError("Full physical address / location is required.");
+    if (!form.lister_contact.trim()) return setFormError("Lister contact (for verification) is required.");
+
+    const result = await registerProject({ ...form, project_id: id });
     if (result !== null) { onSuccess(); onClose(); }
   };
 
-  const set =
-    (k: keyof typeof form) =>
+  const set = (k: keyof typeof form) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
       setForm((prev) => ({ ...prev, [k]: e.target.value }));
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="glass-card w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="glass-card w-full max-w-2xl max-h-[90vh] overflow-y-auto" style={{ background: "#12121e" }}>
         <div className="flex items-center justify-between p-6 border-b border-[#1e1e32]">
           <h2 className="text-white font-bold text-lg flex items-center gap-2">
-            <Plus className="w-5 h-5 text-indigo-400" /> Register Asset
+            <Plus className="w-5 h-5 text-indigo-400" /> Register Asset for Verification
           </h2>
           <button onClick={onClose} className="text-slate-400 hover:text-white"><X className="w-5 h-5" /></button>
         </div>
 
         <div className="p-6 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Project ID (no spaces)" value={form.project_id} onChange={set("project_id")} />
-            <Field label="Asset Name" value={form.name} onChange={set("name")} />
+          {/* Verification notice */}
+          <div className="rounded-xl p-4 flex items-start gap-3" style={{ background: "rgba(255,77,109,0.08)", border: "1px solid rgba(255,77,109,0.2)" }}>
+            <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5" style={{ color: "#FF4D6D" }} />
+            <p className="text-slate-300 text-xs leading-relaxed">
+              Every asset starts <strong className="text-white">UNVERIFIED</strong> with a score of 0.
+              The AI validator scores strictly, without an ownership proof document and verifiable
+              evidence, assets cannot reach a high score. Provide real, checkable information.
+            </p>
           </div>
 
-          <TextAreaField label="Description" value={form.description} onChange={set("description")} />
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Asset ID (no spaces)" value={form.project_id} onChange={set("project_id")} required />
+            <Field label="Asset Name" value={form.name} onChange={set("name")} required />
+          </div>
+
+          <TextAreaField label="Description" value={form.description} onChange={set("description")} required />
 
           <div className="grid grid-cols-2 gap-4">
             <SelectField label="Asset Type" value={form.asset_type} onChange={set("asset_type")}
               options={["Real Estate", "Infrastructure", "Commodity", "Agricultural", "Energy", "Finance", "Other"]} />
-            <Field label="Country" value={form.country} onChange={set("country")} />
+            <Field label="Country" value={form.country} onChange={set("country")} required />
           </div>
+
+          <Field label="Full Physical Address / Location" value={form.location} onChange={set("location")} required />
 
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Specific Location / Address" value={form.location} onChange={set("location")} />
-            <Field label="Asset Value / Price" value={form.price} onChange={set("price")} />
+            <Field label="Stated Price / Value" value={form.price} onChange={set("price")} />
+            <Field label="Lister Contact (email / phone for KYC)" value={form.lister_contact} onChange={set("lister_contact")} required />
           </div>
 
-          {/* Image (required) */}
+          <Field label="Ownership Proof Document URL (title deed / registry)" value={form.ownership_proof_url} onChange={set("ownership_proof_url")} />
+
+          {/* Image */}
           <div>
-            <label className="text-slate-400 text-xs font-medium mb-2 block">Asset Image (required)</label>
+            <label className="text-slate-400 text-xs font-medium mb-2 block">Asset Image</label>
             <div className="flex gap-2 mb-3">
               <button type="button" onClick={() => setImageMode("url")}
                 className={imageMode === "url" ? "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 text-white" : "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#0a0a12] text-slate-400 border border-[#1e1e32]"}>
@@ -145,7 +156,6 @@ export default function RegisterProjectModal({ open, onClose, onSuccess }: Props
                 <Upload className="w-3.5 h-3.5" /> Upload File
               </button>
             </div>
-
             {imageMode === "url" ? (
               <input type="url" value={form.image_url.startsWith("data:") ? "" : form.image_url} onChange={handleUrlChange}
                 className="w-full bg-[#0a0a12] border border-[#1e1e32] rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500" />
@@ -158,7 +168,7 @@ export default function RegisterProjectModal({ open, onClose, onSuccess }: Props
                 </button>
               </div>
             )}
-
+            {imageError && <p className="text-red-400 text-xs mt-2">{imageError}</p>}
             {imagePreview ? (
               <div className="mt-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -173,49 +183,18 @@ export default function RegisterProjectModal({ open, onClose, onSuccess }: Props
 
           <TextAreaField label="Expected Performance" value={form.expected_performance} onChange={set("expected_performance")} />
 
-          {/* AI rating note */}
-          <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4 flex items-start gap-3">
-            <Sparkles className="w-5 h-5 text-indigo-400 mt-0.5 shrink-0" />
-            <div>
-              <p className="text-indigo-300 font-medium text-sm">Rated by a strict AI jury</p>
-              <p className="text-slate-400 text-xs mt-1">
-                Listing an asset does NOT make it trusted. It starts as UNVERIFIED. The GenLayer
-                AI jury rates it strictly, unverifiable self-claims score low, and only strong
-                evidence from independent sources earns a VERIFIED status.
-              </p>
-            </div>
-          </div>
-
-          {/* Ownership attestation */}
-          <label className="flex items-start gap-3 cursor-pointer bg-[#0a0a12] border border-[#1e1e32] rounded-xl p-4">
-            <input type="checkbox" checked={attested} onChange={(e) => setAttested(e.target.checked)} className="mt-1" />
-            <span className="text-slate-300 text-xs">
-              <ShieldCheck className="w-4 h-4 text-indigo-400 inline mr-1" />
-              I attest that I am the owner or an authorized representative of this asset, that the
-              information provided is accurate, and I understand this attestation is signed and
-              permanently recorded on-chain under my wallet address.
-            </span>
-          </label>
-
-          {(localError || error) && (
-            <p className="text-red-400 text-sm bg-red-400/10 rounded-lg p-3">{localError || error}</p>
-          )}
+          {(formError || error) && <p className="text-red-400 text-sm bg-red-400/10 rounded-lg p-3">{formError || error}</p>}
         </div>
 
         <div className="p-6 pt-0 flex gap-3">
-          <button onClick={onClose}
-            className="flex-1 border border-[#1e1e32] text-slate-400 rounded-xl py-3 font-semibold hover:border-indigo-500 hover:text-white transition-all">
-            Cancel
-          </button>
+          <button onClick={onClose} className="flex-1 border border-[#1e1e32] text-slate-400 rounded-xl py-3 font-semibold hover:border-indigo-500 hover:text-white transition-all">Cancel</button>
           {address ? (
-            <button onClick={handleSubmit} disabled={loading}
-              className="flex-1 bg-indigo-600 text-white rounded-xl py-3 font-semibold hover:bg-indigo-500 disabled:opacity-50 transition-all">
+            <button onClick={handleSubmit} disabled={loading} className="flex-1 bg-indigo-600 text-white rounded-xl py-3 font-semibold hover:bg-indigo-500 disabled:opacity-50 transition-all">
               {loading ? "Registering..." : "Register Asset"}
             </button>
           ) : (
-            <button onClick={connect} disabled={connecting}
-              className="flex-1 bg-indigo-600 text-white rounded-xl py-3 font-semibold hover:bg-indigo-500 disabled:opacity-50 transition-all flex items-center justify-center gap-2">
-              <Wallet className="w-4 h-4" /> {connecting ? "Connecting..." : "Connect Wallet to Register"}
+            <button onClick={connect} disabled={connecting} className="flex-1 bg-indigo-600 text-white rounded-xl py-3 font-semibold hover:bg-indigo-500 disabled:opacity-50 transition-all flex items-center justify-center gap-2">
+              <Wallet className="w-4 h-4" /> {connecting ? "Connecting..." : "Connect Wallet"}
             </button>
           )}
         </div>
@@ -224,24 +203,28 @@ export default function RegisterProjectModal({ open, onClose, onSuccess }: Props
   );
 }
 
-function Field({ label, value, onChange, type = "text" }: {
-  label: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; type?: string;
+function Field({ label, value, onChange, type = "text", required = false }: {
+  label: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; type?: string; required?: boolean;
 }) {
   return (
     <div>
-      <label className="text-slate-400 text-xs font-medium mb-1 block">{label}</label>
+      <label className="text-slate-400 text-xs font-medium mb-1 block">
+        {label}{required && <span className="text-red-400 ml-1">*</span>}
+      </label>
       <input type={type} value={value} onChange={onChange}
         className="w-full bg-[#0a0a12] border border-[#1e1e32] rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500" />
     </div>
   );
 }
 
-function TextAreaField({ label, value, onChange }: {
-  label: string; value: string; onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+function TextAreaField({ label, value, onChange, required = false }: {
+  label: string; value: string; onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void; required?: boolean;
 }) {
   return (
     <div>
-      <label className="text-slate-400 text-xs font-medium mb-1 block">{label}</label>
+      <label className="text-slate-400 text-xs font-medium mb-1 block">
+        {label}{required && <span className="text-red-400 ml-1">*</span>}
+      </label>
       <textarea value={value} onChange={onChange} rows={3}
         className="w-full bg-[#0a0a12] border border-[#1e1e32] rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500 resize-none" />
     </div>

@@ -2,12 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Brain, FileText, RefreshCw, Building2, MapPin, Gauge, Tag } from "lucide-react";
+import { ArrowLeft, Brain, FileText, RefreshCw, Building2, MapPin, Gauge, Tag, ExternalLink, User } from "lucide-react";
 import Link from "next/link";
 import Header from "@/components/Header";
-import HealthBadge from "@/components/HealthBadge";
 import StarRating from "@/components/StarRating";
-import VerifyBadge from "@/components/VerifyBadge";
+import VerificationBadge from "@/components/VerificationBadge";
 import HistoryTimeline from "@/components/HistoryTimeline";
 import InsuranceBanner from "@/components/InsuranceBanner";
 import SubmitEvidenceModal from "@/components/SubmitEvidenceModal";
@@ -17,8 +16,7 @@ import type { Project, ProjectHealth, VerdictHistory, InsuranceState, EvidenceEn
 
 export default function ProjectPage() {
   const params = useParams();
-  // Decode the URL param so IDs with encoded characters resolve correctly
-  const id = decodeURIComponent((params.id as string) || "");
+  const id = decodeURIComponent(params.id as string);
   const { getProject, getHealth, getHistory, getInsuranceState, getEvidence, loading } = useContract();
 
   const [project, setProject] = useState<Project | null>(null);
@@ -31,7 +29,6 @@ export default function ProjectPage() {
   const [activeTab, setActiveTab] = useState<"history" | "evidence">("history");
 
   const load = async () => {
-    if (id === "demo-lagos-tower") { return; }
     const [p, h, hist, ins, ev] = await Promise.all([
       getProject(id), getHealth(id), getHistory(id), getInsuranceState(id), getEvidence(id),
     ]);
@@ -45,11 +42,13 @@ export default function ProjectPage() {
   useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [id]);
 
   const riskColors = { LOW: "#10b981", MEDIUM: "#f59e0b", HIGH: "#f97316", CRITICAL: "#ef4444" };
-  const barColor = health ? riskColors[health.risk_level as keyof typeof riskColors] || "#f59e0b" : "#f59e0b";
+  const barColor = health ? riskColors[health.risk_level as keyof typeof riskColors] || "#f97316" : "#f97316";
+  const evaluated = (health?.evaluation_count || 0) > 0;
 
   if (!project && !loading) {
     return (
-      <div className="min-h-screen"><Header />
+      <div className="min-h-screen" style={{ backgroundColor: "#0A0A0B" }}>
+        <Header />
         <div className="max-w-5xl mx-auto px-6 py-20 text-center">
           <p className="text-red-400">Project not found: {id}</p>
           <Link href="/dashboard" className="text-indigo-400 mt-4 block">Back to Dashboard</Link>
@@ -59,7 +58,8 @@ export default function ProjectPage() {
   }
 
   return (
-    <div className="min-h-screen"><Header />
+    <div className="min-h-screen" style={{ backgroundColor: "#0A0A0B" }}>
+      <Header />
       <div className="max-w-5xl mx-auto px-6 py-10">
         <Link href="/dashboard" className="text-slate-500 hover:text-white text-sm flex items-center gap-2 mb-6 transition-colors">
           <ArrowLeft className="w-4 h-4" /> Dashboard
@@ -74,11 +74,9 @@ export default function ProjectPage() {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={project.image_url} alt={project.name} className="w-full h-full object-cover"
                   onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                {project.price && (
-                  <div className="absolute bottom-4 right-4 flex items-center gap-1.5 text-sm font-semibold text-white px-3 py-1.5 rounded-lg" style={{ background: "rgba(0,0,0,0.7)" }}>
-                    <Tag className="w-4 h-4" style={{ color: "#7C5CFF" }} /> {project.price}
-                  </div>
-                )}
+                <div className="absolute top-4 right-4">
+                  <VerificationBadge status={project.verification_status} size="lg" />
+                </div>
               </div>
             )}
 
@@ -88,19 +86,46 @@ export default function ProjectPage() {
                   <Building2 className="w-7 h-7 text-indigo-400" />
                 </div>
                 <div>
-                  <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex items-center gap-3">
                     <h1 className="text-2xl font-bold text-white">{project?.name}</h1>
-                    {health && <VerifyBadge status={health.verification} size="md" />}
+                    {project && !project.image_url && <VerificationBadge status={project.verification_status} size="lg" />}
                   </div>
                   <div className="flex items-center gap-3 mt-1 text-sm text-slate-500 flex-wrap">
                     <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {project?.location || project?.country}</span>
                     <span>{project?.asset_type}</span>
-                    <span>ID: <code className="font-mono text-slate-400">{id}</code></span>
+                    {project?.price && <span className="flex items-center gap-1 text-slate-300"><Tag className="w-3.5 h-3.5" /> {project.price}</span>}
                   </div>
                 </div>
               </div>
-              {health && <HealthBadge status={health.status} score={health.health_score} size="lg" />}
+              {evaluated && health && <StarRating score={health.health_score} size="lg" />}
             </div>
+
+            {/* Asset details panel */}
+            {project && (
+              <div className="rounded-2xl p-5 mb-6" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                <h3 className="text-white font-semibold text-sm mb-3">Asset Details</h3>
+                <p className="text-slate-400 text-sm mb-4 leading-relaxed">{project.description}</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                  <div className="flex items-center gap-2">
+                    <User className="w-4 h-4 text-slate-500" />
+                    <span className="text-slate-500">Lister contact:</span>
+                    <span className="text-slate-300 truncate">{project.lister_contact || "—"}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-slate-500" />
+                    <span className="text-slate-500">Ownership proof:</span>
+                    {project.ownership_proof_url ? (
+                      <a href={project.ownership_proof_url} target="_blank" rel="noopener noreferrer"
+                        className="text-indigo-400 hover:text-indigo-300 flex items-center gap-1 truncate">
+                        View document <ExternalLink className="w-3 h-3" />
+                      </a>
+                    ) : (
+                      <span className="text-red-400">Not provided</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {insurance && insurance.insurance_triggered && (
               <div className="mb-6"><InsuranceBanner state={insurance} /></div>
@@ -108,17 +133,17 @@ export default function ProjectPage() {
 
             {health && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div className="glass-card p-5 md:col-span-2">
+                <div className="rounded-2xl p-5 md:col-span-2" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-slate-400 text-sm flex items-center gap-1"><Gauge className="w-4 h-4" /> AI Rating</span>
-                    <StarRating score={health.health_score} size="lg" />
+                    <span className="text-slate-400 text-sm flex items-center gap-1"><Gauge className="w-4 h-4" /> AI Trust Score</span>
+                    {evaluated ? <StarRating score={health.health_score} size="lg" /> : <span className="text-xs text-slate-500 italic">Not evaluated yet</span>}
                   </div>
                   <div className="flex justify-between text-sm mb-2">
-                    <span className="text-slate-500">Health Score</span>
-                    <span className="font-mono font-bold text-xl" style={{ color: barColor }}>{health.health_score}/100</span>
+                    <span className="text-slate-500">Score</span>
+                    <span className="font-mono font-bold text-xl" style={{ color: evaluated ? barColor : "#64748b" }}>{health.health_score}/100</span>
                   </div>
-                  <div className="health-bar mb-3">
-                    <div className="health-bar-fill" style={{ width: health.health_score + "%", backgroundColor: barColor }} />
+                  <div className="h-2 rounded-full overflow-hidden mb-3" style={{ background: "#1e1e32" }}>
+                    <div className="h-full rounded-full" style={{ width: `${health.health_score}%`, background: barColor }} />
                   </div>
                   <div className="grid grid-cols-3 gap-3 text-center text-xs">
                     <div className="bg-[#0a0a12] rounded-lg p-2"><p className="text-slate-500">Risk</p><p className="text-white font-semibold mt-0.5">{health.risk_level}</p></div>
@@ -127,12 +152,12 @@ export default function ProjectPage() {
                   </div>
                 </div>
 
-                <div className="glass-card p-5">
-                  <p className="text-slate-400 text-sm font-medium mb-3">Trust & Insurance</p>
+                <div className="rounded-2xl p-5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  <p className="text-slate-400 text-sm font-medium mb-3">Status</p>
                   <div className="space-y-2 text-sm">
-                    <div className="flex justify-between items-center"><span className="text-slate-500">Verification</span><VerifyBadge status={health.verification} /></div>
-                    <div className="flex justify-between"><span className="text-slate-500">Insurance</span><span className={insurance?.insurance_triggered ? "text-red-400" : "text-emerald-400"}>{insurance?.insurance_triggered ? "Triggered" : "Normal"}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-500">Claim Eligible</span><span className={insurance?.claim_eligible ? "text-red-400" : "text-slate-500"}>{insurance?.claim_eligible ? "Yes" : "No"}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-500">Verification</span><span className="text-white">{project?.verification_status?.replace(/_/g, " ")}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-500">Insurance</span><span className={insurance?.insurance_triggered ? "text-red-400" : "text-emerald-400"}>{insurance?.insurance_triggered ? "Triggered" : "Clear"}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-500">Claim eligible</span><span className={insurance?.claim_eligible ? "text-red-400" : "text-slate-500"}>{insurance?.claim_eligible ? "Yes" : "No"}</span></div>
                   </div>
                 </div>
               </div>
@@ -143,17 +168,17 @@ export default function ProjectPage() {
                 <FileText className="w-4 h-4" /> Submit Evidence
               </button>
               <button onClick={() => setShowEvaluate(true)} className="flex-1 flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl py-3 text-sm font-semibold transition-all">
-                <Brain className="w-4 h-4" /> Run AI Evaluation
+                <Brain className="w-4 h-4" /> Run AI Verification
               </button>
               <button onClick={load} disabled={loading} aria-label="Refresh" className="p-3 border border-[#1e1e32] text-slate-400 hover:text-white rounded-xl transition-all">
                 <RefreshCw className={loading ? "w-4 h-4 animate-spin" : "w-4 h-4"} />
               </button>
             </div>
 
-            <div className="flex gap-1 bg-[#12121e] border border-[#1e1e32] rounded-xl p-1 mb-6 w-fit">
+            <div className="flex gap-1 border border-[#1e1e32] rounded-xl p-1 mb-6 w-fit" style={{ background: "rgba(255,255,255,0.03)" }}>
               {(["history", "evidence"] as const).map((tab) => (
                 <button key={tab} onClick={() => setActiveTab(tab)}
-                  className={activeTab === tab ? "px-5 py-2 rounded-lg text-sm font-medium transition-all capitalize bg-indigo-600 text-white" : "px-5 py-2 rounded-lg text-sm font-medium transition-all capitalize text-slate-500 hover:text-white"}>
+                  className={activeTab === tab ? "px-5 py-2 rounded-lg text-sm font-medium capitalize bg-indigo-600 text-white" : "px-5 py-2 rounded-lg text-sm font-medium capitalize text-slate-500 hover:text-white"}>
                   {tab === "history" ? "AI Verdicts" : "Evidence"}
                 </button>
               ))}
@@ -164,17 +189,19 @@ export default function ProjectPage() {
             ) : (
               <div className="space-y-3">
                 {evidence.length === 0 ? (
-                  <div className="glass-card p-8 text-center">
+                  <div className="rounded-2xl p-8 text-center" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
                     <FileText className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-                    <p className="text-slate-500 text-sm">No evidence submitted yet.</p>
+                    <p className="text-slate-500 text-sm">No evidence submitted yet. Add verifiable evidence, then run AI verification.</p>
                   </div>
                 ) : (
                   [...evidence].reverse().map((ev, i) => (
-                    <div key={i} className="glass-card p-4">
+                    <div key={i} className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-mono text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded">{ev.evidence_type}</span>
                         {ev.source_url && (
-                          <a href={ev.source_url} target="_blank" rel="noopener noreferrer" className="text-xs text-slate-500 hover:text-indigo-400 transition-colors truncate max-w-[200px]">{ev.source_url}</a>
+                          <a href={ev.source_url} target="_blank" rel="noopener noreferrer" className="text-xs text-slate-500 hover:text-indigo-400 flex items-center gap-1 truncate max-w-[220px]">
+                            {ev.source_url} <ExternalLink className="w-3 h-3 shrink-0" />
+                          </a>
                         )}
                       </div>
                       <p className="text-slate-300 text-sm">{ev.content}</p>

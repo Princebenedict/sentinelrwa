@@ -1,24 +1,33 @@
 "use client";
 
-import { CheckCircle, AlertTriangle, XCircle, Brain } from "lucide-react";
+import { CheckCircle, AlertTriangle, XCircle, ShieldQuestion, Brain } from "lucide-react";
 import type { VerdictHistory } from "@/lib/types";
 
 interface Props {
   history: VerdictHistory[];
 }
 
-const verdictConfig = {
+type VerdictStyle = { icon: typeof CheckCircle; color: string; bg: string };
+
+const verdictConfig: Record<string, VerdictStyle> = {
+  VERIFIED: { icon: CheckCircle, color: "text-emerald-400", bg: "bg-emerald-400/10 border-emerald-400/20" },
+  PARTIALLY_VERIFIED: { icon: AlertTriangle, color: "text-amber-400", bg: "bg-amber-400/10 border-amber-400/20" },
+  UNVERIFIED: { icon: ShieldQuestion, color: "text-slate-400", bg: "bg-slate-400/10 border-slate-400/20" },
+  SUSPICIOUS: { icon: XCircle, color: "text-red-400", bg: "bg-red-400/10 border-red-400/20" },
+  // legacy fallbacks
   PASS: { icon: CheckCircle, color: "text-emerald-400", bg: "bg-emerald-400/10 border-emerald-400/20" },
   CONCERN: { icon: AlertTriangle, color: "text-amber-400", bg: "bg-amber-400/10 border-amber-400/20" },
   FAIL: { icon: XCircle, color: "text-red-400", bg: "bg-red-400/10 border-red-400/20" },
 };
 
+const DEFAULT_STYLE: VerdictStyle = { icon: ShieldQuestion, color: "text-slate-400", bg: "bg-slate-400/10 border-slate-400/20" };
+
 export default function HistoryTimeline({ history }: Props) {
   if (history.length === 0) {
     return (
-      <div className="glass-card p-8 text-center">
+      <div className="rounded-2xl p-8 text-center" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
         <Brain className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-        <p className="text-slate-500 text-sm">No AI evaluations yet. Submit evidence and trigger an evaluation.</p>
+        <p className="text-slate-500 text-sm">No AI verifications yet. Submit evidence and run a verification.</p>
       </div>
     );
   }
@@ -26,15 +35,15 @@ export default function HistoryTimeline({ history }: Props) {
   return (
     <div className="space-y-4">
       {[...history].reverse().map((entry, i) => {
-        const config = verdictConfig[entry.verdict] || verdictConfig.CONCERN;
+        const config = verdictConfig[entry.verdict] || DEFAULT_STYLE;
         const Icon = config.icon;
         return (
-          <div key={i} className={`glass-card p-5 border ${config.bg}`}>
+          <div key={i} className={`rounded-2xl p-5 border ${config.bg}`}>
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-3">
                 <Icon className={`w-5 h-5 ${config.color}`} />
                 <div>
-                  <span className={`font-bold text-sm ${config.color}`}>{entry.verdict}</span>
+                  <span className={`font-bold text-sm ${config.color}`}>{entry.verdict?.replace(/_/g, " ")}</span>
                   <span className="text-slate-500 text-xs ml-2">Evaluation #{entry.evaluation_number}</span>
                 </div>
               </div>

@@ -199,7 +199,7 @@ export default function ProjectPage() {
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-mono text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded">{ev.evidence_type}</span>
                         {ev.source_url && (
-                          <a href={ev.source_url} target="_blank" rel="noopener noreferrer" className="text-xs text-slate-500 hover:text-indigo-400 flex items-center gap-1 truncate max-w-[220px]">
+                          <a href={ev.source_url} target="_blank" rel="noopener noreferrer" className="text-xs text-slate-500 hover:text-indigo-400 flex items-center gap-1 truncate max-w-55">
                             {ev.source_url} <ExternalLink className="w-3 h-3 shrink-0" />
                           </a>
                         )}

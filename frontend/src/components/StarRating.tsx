@@ -1,43 +1,49 @@
-import { Star } from "lucide-react";
+"use client";
 
-export function scoreToRating(score: number): { stars: number; label: string; color: string } {
-  if (score >= 80) return { stars: 5, label: "Excellent", color: "#10b981" };
-  if (score >= 60) return { stars: 4, label: "Good", color: "#22c55e" };
-  if (score >= 40) return { stars: 3, label: "Average", color: "#f59e0b" };
-  if (score >= 20) return { stars: 2, label: "Poor", color: "#f97316" };
-  return { stars: 1, label: "Very Poor", color: "#ef4444" };
-}
+import { Star } from "lucide-react";
 
 interface Props {
   score: number;
-  rated: boolean;
-  size?: "sm" | "md";
+  size?: "sm" | "md" | "lg";
   showLabel?: boolean;
 }
 
-export default function StarRating({ score, rated, size = "md", showLabel = true }: Props) {
-  if (!rated) {
-    return <span className="text-xs text-slate-500 italic">Awaiting AI validator rating</span>;
-  }
-  const { stars, label, color } = scoreToRating(score);
-  const starSize = size === "sm" ? "w-3.5 h-3.5" : "w-4 h-4";
+function scoreToStars(score: number): number {
+  if (score >= 90) return 5;
+  if (score >= 70) return 4;
+  if (score >= 50) return 3;
+  if (score >= 30) return 2;
+  if (score > 0) return 1;
+  return 0;
+}
+
+function scoreToLabel(score: number): string {
+  if (score >= 90) return "Excellent";
+  if (score >= 70) return "Good";
+  if (score >= 50) return "Average";
+  if (score >= 30) return "Poor";
+  if (score > 0) return "Very Poor";
+  return "Unrated";
+}
+
+export default function StarRating({ score, size = "md", showLabel = true }: Props) {
+  const stars = scoreToStars(score);
+  const starSize = size === "sm" ? "w-3 h-3" : size === "lg" ? "w-5 h-5" : "w-4 h-4";
+  const textSize = size === "sm" ? "text-xs" : size === "lg" ? "text-base" : "text-xs";
+
   return (
     <div className="flex items-center gap-2">
       <div className="flex items-center gap-0.5">
-        {[1, 2, 3, 4, 5].map((n) => (
+        {[1, 2, 3, 4, 5].map((i) => (
           <Star
-            key={n}
-            className={starSize}
-            style={{
-              fill: n <= stars ? color : "transparent",
-              color: n <= stars ? color : "#3f3f5a",
-            }}
+            key={i}
+            className={i <= stars ? `${starSize} fill-amber-400 text-amber-400` : `${starSize} text-slate-600`}
           />
         ))}
       </div>
       {showLabel && (
-        <span className="text-xs font-medium" style={{ color }}>
-          {label} · {score}%
+        <span className={`${textSize} text-slate-400`}>
+          {scoreToLabel(score)} · {score}%
         </span>
       )}
     </div>

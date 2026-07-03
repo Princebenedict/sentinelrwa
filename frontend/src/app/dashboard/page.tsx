@@ -19,7 +19,7 @@ const DEMO_ASSET: DashboardItem = {
   health_score: 88,
   risk_level: "LOW",
   status: "HEALTHY",
-  verification: "VERIFIED",
+  verification_status: "VERIFIED",
   location: "Victoria Island, Lagos",
   price: "$2,400,000",
   latest_verdict: "PASS",
@@ -134,7 +134,7 @@ export default function DashboardPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {display.map((p, i) => (
-              <div key={p.project_id} className="card-in" style={{ animationDelay: `${0.4 + i * 0.06}s` }}>
+              <div key={p.project_id} className="card-in" style={{ animationDelay: `${0.4 + i * 0.06}s`, pointerEvents: hasReal ? "auto" : "none", opacity: hasReal ? 1 : 0.85 }}>
                 <ProjectCard project={p} />
               </div>
             ))}

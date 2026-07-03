@@ -8,7 +8,7 @@ export const CONTRACT_ADDRESS = (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "")
 const readClient = createClient({ chain: testnetBradbury });
 
 // Simple cache + in-flight dedupe to avoid hammering the RPC (rate limits)
-const CACHE_MS = 8000;
+const CACHE_MS = 30000;
 type CacheEntry = { time: number; value: unknown };
 const cache = new Map<string, CacheEntry>();
 const inflight = new Map<string, Promise<unknown>>();

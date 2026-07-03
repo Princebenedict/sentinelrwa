@@ -19,6 +19,9 @@ const DEMO_ASSET: DashboardItem = {
   health_score: 88,
   risk_level: "LOW",
   status: "HEALTHY",
+  verification: "VERIFIED",
+  location: "Victoria Island, Lagos",
+  price: "$2,400,000",
   latest_verdict: "PASS",
   evaluation_count: 3,
 };

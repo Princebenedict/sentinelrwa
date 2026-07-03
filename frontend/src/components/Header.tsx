@@ -6,15 +6,19 @@ import { Shield, Activity, Wallet, LogOut, ShieldAlert } from "lucide-react";
 import { useWallet } from "@/hooks/useWallet";
 import { callView } from "@/lib/genlayer";
 
+// Fetched once per session, avoids an RPC call on every page load
+let cachedOwner: string | null = null;
+
 export default function Header() {
   const { address, connect, disconnect, connecting } = useWallet();
-  const [owner, setOwner] = useState<string | null>(null);
+  const [owner, setOwner] = useState<string | null>(cachedOwner);
   const short = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "";
 
   useEffect(() => {
     if (!address) return;
+    if (cachedOwner) { setOwner(cachedOwner); return; }
     callView<string>("get_owner").then((o) => {
-      if (typeof o === "string") setOwner(o);
+      if (typeof o === "string") { cachedOwner = o; setOwner(o); }
     }).catch(() => {});
   }, [address]);
 

@@ -8,6 +8,7 @@ import Header from "@/components/Header";
 import StarRating from "@/components/StarRating";
 import VerificationBadge from "@/components/VerificationBadge";
 import HistoryTimeline from "@/components/HistoryTimeline";
+import IntelligenceTimeline from "@/components/IntelligenceTimeline";
 import InsuranceBanner from "@/components/InsuranceBanner";
 import SubmitEvidenceModal from "@/components/SubmitEvidenceModal";
 import EvaluateModal from "@/components/EvaluateModal";
@@ -26,7 +27,7 @@ export default function ProjectPage() {
   const [evidence, setEvidence] = useState<EvidenceEntry[]>([]);
   const [showEvidence, setShowEvidence] = useState(false);
   const [showEvaluate, setShowEvaluate] = useState(false);
-  const [activeTab, setActiveTab] = useState<"history" | "evidence">("history");
+  const [activeTab, setActiveTab] = useState<"history" | "evidence" | "timeline">("history");
   const [hasLoaded, setHasLoaded] = useState(false);
 
   const load = async () => {
@@ -178,16 +179,18 @@ export default function ProjectPage() {
             </div>
 
             <div className="flex gap-1 border border-[#1e1e32] rounded-xl p-1 mb-6 w-fit" style={{ background: "rgba(255,255,255,0.03)" }}>
-              {(["history", "evidence"] as const).map((tab) => (
+              {(["history", "timeline", "evidence"] as const).map((tab) => (
                 <button key={tab} onClick={() => setActiveTab(tab)}
                   className={activeTab === tab ? "px-5 py-2 rounded-lg text-sm font-medium capitalize bg-indigo-600 text-white" : "px-5 py-2 rounded-lg text-sm font-medium capitalize text-slate-500 hover:text-white"}>
-                  {tab === "history" ? "AI Verdicts" : "Evidence"}
+                  {tab === "history" ? "AI Verdicts" : tab === "timeline" ? "Timeline" : "Evidence"}
                 </button>
               ))}
             </div>
 
             {activeTab === "history" ? (
               <HistoryTimeline history={history} />
+            ) : activeTab === "timeline" ? (
+              <IntelligenceTimeline history={history} evidenceCount={evidence.length} />
             ) : (
               <div className="space-y-3">
                 {evidence.length === 0 ? (

@@ -6,7 +6,7 @@ SentinelRWA is a decentralized platform that verifies and monitors real-world as
 
 Live on GenLayer Bradbury Testnet.
 **Live demo:** https://sentinelrwa-7px4.vercel.app 
-NEXT_PUBLIC_CONTRACT_ADDRESS=0x8Dfbf8BD75336b383cdD10Cb164970970765a614
+NEXT_PUBLIC_CONTRACT_ADDRESS=0xeBdBc3B18e96d7067315733eAcf922919010D07a
 ---
 
 ## The Problem

@@ -161,3 +161,8 @@ git add README.md
 git commit -m "Add project README"
 git push origin main
 
+
+
+## Deployed Contract
+
+Live on GenLayer Bradbury Testnet: `0x9f4cDBa7b37de2ca6EC5FFA8b93B6A63e960404b`
